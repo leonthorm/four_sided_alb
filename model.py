@@ -37,5 +37,21 @@ def four_sided_alb_model() -> gp.Model:
     v1 = model.addVars(M,  H, vtype=GRB.BINARY, name = 'at least one task t_o in mated-station m with side h')
     v2 = model.addVars(M,  H, vtype=GRB.BINARY, name = 'at least one task t_r in mated-station m with side h')
 
+    # 1
+
+    # 2
+    # 3
+    model.addConstrs((quicksum(quicksum(x[j, m, h] for h in range(H)) for m in range(M)) == 1 for j in range(J)))
+    # 4
+    model.addConstrs((quicksum(quicksum(x[j, m, h] for h in range(H)) for m in range(M)) == 1 for j in range(J)))
+    # 5
+    # 6
+    # 7
+    # 8
+    # 9
+    # 10
+    # 11
+    # 12
+    # 13
 
     return model
