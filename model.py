@@ -15,6 +15,8 @@ def four_sided_alb_model() -> gp.Model:
     mated_stations = []  # Set of mated stations
     sides = ['left-side', 'right-side', 'beneath-side', 'above-side']
     agents = []  # Set of agents
+    agents_human = []  # Index of humans in the subset of agents
+    agents_robot = []  # Index of robots in the subset of agents
     product_models = []  # Set of product models
 
     # Specific Task Sets
@@ -69,23 +71,23 @@ def four_sided_alb_model() -> gp.Model:
     )
     # 2
     model.setObjective(
-        quicksum((C[a]*(quicksum(quicksum(q[a,h,m] for m in range(H)) for h in range(H)))) for a in range(A)),
+        quicksum((C[a]*(quicksum(quicksum(q[a,h,m] for m in range(M)) for h in range(H)))) for a in range(A)),
         GRB.MINIMIZE
     )
     # 3
     model.addConstrs((quicksum(quicksum(x[j, m, h] for h in range(H)) for m in range(M)) == 1 for j in range(J)), name="Task_Assignment")
     # 4
     # TODO subsets
-    model.addConstrs((quicksum(x[j, m, 2] for m in range(M)) == 1 for j in range(J)), name="Beneath_Task_Assignment")
+    model.addConstrs((quicksum(x[j, m, 2] for m in range(M)) == 1 for j in us), name="Beneath_Task_Assignment")
     # 5
     # TODO subsets
-    model.addConstrs((quicksum(x[j, m, 3] for m in range(M)) == 1 for j in range(J)), name="Above_Task_Assignment")
+    model.addConstrs((quicksum(x[j, m, 3] for m in range(M)) == 1 for j in ps), name="Above_Task_Assignment")
     # 6
     model.addConstrs((quicksum(quicksum(q[a, h, m] for h in range(H)) for m in range(M)) <= 1 for a in range(A)), name="Agent_Assignment")
     # 7
     model.addConstrs(quicksum(q[a, h, m] for a in range(A)) == z[m, h] for h in range(H) for m in range(M))
     # 8
-    model.addConstrs(quicksum(q[a, 4-1, m] for a in range(A)) <= 0 for m in range(M))
+    model.addConstrs(quicksum(q[a, 4-1, m] for a in range(A)) <= 0 for m in agents_human)
     # 9
     model.addConstrs(tf[j, n] <= cy for j in range(J) for n in range(N))
     # 10
@@ -93,7 +95,7 @@ def four_sided_alb_model() -> gp.Model:
     # 11
     model.addConstrs(
         (rr[j, n]
-         == quicksum(quicksum(quicksum(tf[a, j, n] * x[j, m, h] * q[a, h, m] for m in range(M)) for a in range(A)) for h in range(H)))
+         == quicksum(quicksum(quicksum(t[a, j, n] * x[j, m, h] * q[a, h, m] for m in range(M)) for a in range(A)) for h in range(H)))
         for j in range(J) for n in range(N)
     )
     # 12
