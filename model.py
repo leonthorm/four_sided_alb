@@ -76,6 +76,14 @@ def four_sided_alb_model() -> gp.Model:
     )
     # 3
     model.addConstrs((quicksum(quicksum(x[j, m, h] for h in range(H)) for m in range(M)) == 1 for j in range(J)), name="Task_Assignment")
+
+    # Ensure tasks are distributed across stations more evenly - chatgpt
+    model.addConstrs(
+    gp.quicksum(x[j, m, h] for h in range(H)) <= (J / M) + 1  # Soft balancing constraint
+    for j in range(J) for m in range(M)
+    )
+
+    
     # 4
     # TODO subsets
     model.addConstrs((quicksum(x[j, m, 2] for m in range(M)) == 1 for j in us), name="Beneath_Task_Assignment")
@@ -84,6 +92,18 @@ def four_sided_alb_model() -> gp.Model:
     model.addConstrs((quicksum(x[j, m, 3] for m in range(M)) == 1 for j in ps), name="Above_Task_Assignment")
     # 6
     model.addConstrs((quicksum(quicksum(q[a, h, m] for h in range(H)) for m in range(M)) <= 1 for a in range(A)), name="Agent_Assignment")
+
+    # Ensure only humans do tasks in 'to' (tasks only humans can do) - chatgpt
+    model.addConstrs(
+    gp.quicksum(q[a, h, m] for a in humans) >= gp.quicksum(x[j, m, h] for j in to for h in range(H)) 
+    for m in range(M)
+    )
+
+    # Ensure only robots do tasks in 'tr' (tasks only robots can do) - chatgpt
+    model.addConstrs(
+    gp.quicksum(q[a, h, m] for a in robots) >= gp.quicksum(x[j, m, h] for j in tr for h in range(H)) 
+    for m in range(M)
+    )
     # 7
     model.addConstrs(quicksum(q[a, h, m] for a in range(A)) == z[m, h] for h in range(H) for m in range(M))
     # 8
@@ -92,6 +112,18 @@ def four_sided_alb_model() -> gp.Model:
     model.addConstrs(tf[j, n] <= cy for j in range(J) for n in range(N))
     # 10
     model.addConstrs(tf[j, n] >= rr[j, n] for j in range(J) for n in range(N))
+    
+    # Ensure tasks finish within cycle time - chatgpt
+    model.addConstrs(
+    tf[j, n] <= cy for j in range(J) for n in range(N)
+    )
+
+    # Update the objective function to minimize cycle time - chatgpt
+    model.setObjective(
+    cy + gp.quicksum(C[a] * q[a, h, m] for a in range(A) for h in range(H) for m in range(M)), 
+    GRB.MINIMIZE
+    )
+
     # 11
     model.addConstrs(
         (rr[j, n]
@@ -174,6 +206,9 @@ def four_sided_alb_model() -> gp.Model:
     model.addConstrs(
         quicksum(q[a, h, m] for a in range(A)) <= 1 - (v2[m, h]) for m in range(M) for h in range(H)
     )
+
+    # Enforce strict binary variable constraints - chatgpt
+    model.Params.IntFeasTol = 1e-6
 
 
 
